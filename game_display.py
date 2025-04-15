@@ -38,3 +38,21 @@ class GameDisplay:
                     print("    ", end=" ")
             print()
         print("\n")
+
+    def get_command(self):
+        return input("Enter command (d-draw, m-move, q-quit): ").lower()
+
+    def get_move_source(self):
+        return input("From (w-waste, t1-t7, f1-f4): ").lower()
+
+    def get_move_destination(self):
+        return input("To (t1-t7, f1-f4): ").lower()
+
+    def display_move_result(self, result):
+        print(result)
+
+    def prompt_continue(self):
+        input("Press Enter to continue...")
+
+    def display_win_message(self):
+        print("Congratulations! You win!")

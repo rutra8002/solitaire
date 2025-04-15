@@ -72,18 +72,18 @@ class Solitaire:
     def play(self):
         while not self.check_win():
             self.display.display()
-            command = input("Enter command (d-draw, m-move, q-quit): ").lower()
+            command = self.display.get_command()
 
             if command == 'q':
                 break
             elif command == 'd':
                 self.draw_card()
             elif command == 'm':
-                source = input("From (w-waste, t1-t7, f1-f4): ").lower()
-                dest = input("To (t1-t7, f1-f4): ").lower()
+                source = self.display.get_move_source()
+                dest = self.display.get_move_destination()
                 result = self.move_handler.move_card(source, dest)
-                print(result)
-                input("Press Enter to continue...")
+                self.display.display_move_result(result)
+                self.display.prompt_continue()
 
         if self.check_win():
-            print("Congratulations! You win!")
+            self.display.display_win_message()
