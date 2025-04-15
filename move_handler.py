@@ -59,19 +59,40 @@ class MoveHandler:
                 if self.game.can_place_on_foundation(card, dest_pile):
                     dest_pile.append(self.game.waste.pop())
                     return "Moved successfully"
-                return "Invalid foundation move: must start with Ace and build up by suit"
+                if not dest_pile:
+                    return "Foundation piles must start with Ace"
+                return "Invalid foundation move: must build up by suit"
 
         # Handle tableau to tableau/foundation movement
         elif source_pile in self.game.tableau:
             if not source_pile:
                 return "No cards in this tableau pile"
 
-            # Find first visible card to move (and all cards after it)
+            # Moving to foundation
+            if dest_pile in self.game.foundations:
+                # For foundation, can only move the last card in tableau pile
+                if not source_pile[-1].visible:
+                    return "Can't move face-down cards"
+
+                card = source_pile[-1]
+                if self.game.can_place_on_foundation(card, dest_pile):
+                    dest_pile.append(source_pile.pop())
+                    if source_pile and not source_pile[-1].visible:
+                        source_pile[-1] = Card(source_pile[-1].rank, source_pile[-1].suit, True)
+                    return "Moved successfully"
+
+                if not dest_pile:
+                    return "Foundation piles must start with Ace"
+                return "Invalid foundation move: must build up by suit"
+
+            # Find first visible card to move (for tableau to tableau)
+            first_visible_idx = None
             for i, c in enumerate(source_pile):
                 if c.visible:
                     first_visible_idx = i
                     break
-            else:
+
+            if first_visible_idx is None:
                 return "No visible cards in this pile"
 
             cards_to_move = source_pile[first_visible_idx:]
@@ -98,16 +119,23 @@ class MoveHandler:
                     return "Moved successfully"
                 return "Invalid move: card must be opposite color and one rank lower"
 
-            # Moving to foundation (only one card at a time)
-            elif dest_pile in self.game.foundations:
-                if len(cards_to_move) > 1:
-                    return "Can only move one card at a time to foundation"
-                card = source_pile[-1]
-                if self.game.can_place_on_foundation(card, dest_pile):
+        # Handle foundation to tableau movement
+        elif source_pile in self.game.foundations:
+            if not source_pile:
+                return "No cards in this foundation pile"
+
+            card = source_pile[-1]
+            # Moving to tableau
+            if dest_pile in self.game.tableau:
+                if not dest_pile:  # Empty tableau - only Kings allowed
+                    if card.rank == 'K':
+                        dest_pile.append(source_pile.pop())
+                        return "Moved successfully"
+                    return "Only Kings can be placed on empty tableau piles"
+                # Non-empty tableau pile
+                if self.game.can_place_on_tableau(card, dest_pile[-1]):
                     dest_pile.append(source_pile.pop())
-                    if source_pile and not source_pile[-1].visible:
-                        source_pile[-1] = Card(source_pile[-1].rank, source_pile[-1].suit, True)
                     return "Moved successfully"
-                return "Invalid foundation move: must start with Ace and build up by suit"
+                return "Invalid move: card must be opposite color and one rank lower"
 
         return "Invalid move"
