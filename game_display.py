@@ -21,11 +21,15 @@ class GameDisplay:
         layout.split(
             Layout(name="header", size=3),
             Layout(name="game"),
+            Layout(name="status", size=2),
             Layout(name="controls", size=3)
         )
 
-        # Header
-        layout["header"].update(Panel("=== CONSOLE SOLITAIRE ===", style="bold white on blue"))
+        # Header with difficulty
+        difficulty_text = "EASY MODE" if self.game.difficulty == 'easy' else "HARD MODE"
+        layout["header"].update(
+            Panel(f"=== CONSOLE SOLITAIRE - {difficulty_text} ===", style="bold white on blue")
+        )
 
         # Game area with stock, waste, foundations and tableau
         game_layout = Layout()
@@ -47,8 +51,11 @@ class GameDisplay:
         waste_display = "[ ]"
         if self.game.waste:
             card = self.game.waste[-1]
-            suit_color = "red" if card.suit in ["♥", "♦"] else "white"
-            waste_display = f"[{card.rank}{Text(card.suit, style=suit_color)}]"
+            if card.visible:
+                suit_color = "red" if card.suit in ["♥", "♦"] else "white"
+                waste_display = f"[{card.rank}{Text(card.suit, style=suit_color)}]"
+            else:
+                waste_display = "[XX]"
 
         # Foundations display with colored suits
         foundations_display = ""
@@ -90,16 +97,21 @@ class GameDisplay:
         game_layout["tableau"].update(Panel(tableau_table, title="Tableau"))
         layout["game"].update(game_layout)
 
+        # Status bar with move count and undo info
+        undo_info = f"Undo available: {min(len(self.game.move_history), 3)}/3"
+        status_text = f"Moves: {self.game.move_count} | {undo_info}"
+        layout["status"].update(Panel(status_text, style="bold white on blue"))
+
         # Controls
         layout["controls"].update(
-            Panel("Commands: (d)raw, (m)ove, (q)uit", style="bold white on blue")
+            Panel("Commands: (d)raw, (m)ove, (u)ndo, (n)ew game, (q)uit", style="bold white on blue")
         )
 
         # Render the complete layout
         self.console.print(layout)
 
     def get_command(self):
-        return input("Enter command (d-draw, m-move, q-quit): ").lower()
+        return input("Enter command (d-draw, m-move, u-undo, n-new game, q-quit): ").lower()
 
     def get_move_source(self):
         return input("From (w-waste, t1-t7, f1-f4): ").lower()
@@ -113,5 +125,17 @@ class GameDisplay:
     def prompt_continue(self):
         input("Press Enter to continue...")
 
-    def display_win_message(self):
-        self.console.print(Panel("🎉 Congratulations! You win! 🎉", style="bold green"))
+    def confirm_new_game(self):
+        choice = input("Are you sure you want to start a new game? (y/n): ").lower()
+        return choice == 'y'
+
+    def display_win_message(self, score, leaderboard):
+        self.console.print(Panel(f"🎉 Congratulations! You win! 🎉\nYour score: {score} moves", style="bold green"))
+
+        # Display leaderboard
+        if leaderboard:
+            self.console.print(Panel("Leaderboard (Top 10)", style="bold yellow"))
+            for i, s in enumerate(leaderboard[:10], 1):
+                self.console.print(f"{i}. {s} moves")
+
+        input("Press Enter to exit...")
