@@ -6,202 +6,160 @@ class MoveHandler:
         self.game = game
 
     def get_pile_from_code(self, code):
-        """Get the actual pile from a code like w, t1, f2, etc."""
-        if code == 'w':
-            return self.game.waste, None
-        elif code.startswith('t') and len(code) == 2:
+        """
+        Converts a pile code (e.g., 't1', 'f2', 'w') into the actual pile and its index
+        Returns a tuple: (pile, index) or (None, None) if invalid
+        """
+        if not code:
+            return None, None
+
+        # Strip whitespace and ensure lowercase
+        code = code.strip().lower()
+
+        if len(code) < 1:
+            return None, None
+
+        if code[0] == 't' and len(code) > 1:
             try:
-                idx = int(code[1]) - 1
+                idx = int(code[1:]) - 1
                 if 0 <= idx < 7:
                     return self.game.tableau[idx], idx
             except ValueError:
                 pass
-        elif code.startswith('f') and len(code) == 2:
+
+        elif code[0] == 'f' and len(code) > 1:
             try:
-                idx = int(code[1]) - 1
+                idx = int(code[1:]) - 1
                 if 0 <= idx < 4:
                     return self.game.foundations[idx], idx
             except ValueError:
                 pass
+
+        elif code[0] == 'w':
+            return self.game.waste, None
+
         return None, None
 
     def move_card(self, source_code, dest_code):
-        """Handle card movement between different piles"""
+        """
+        Move card(s) from source to destination
+        Returns a message indicating success or failure
+        """
         source_pile, source_idx = self.get_pile_from_code(source_code)
         dest_pile, dest_idx = self.get_pile_from_code(dest_code)
 
-        if source_pile is None or dest_pile is None:
-            return "Invalid source or destination"
+        # Validate source and destination
+        if source_pile is None:  # Check if None, not if empty
+            return f"Invalid source: {source_code}"
+        if dest_pile is None:  # Check if None, not if empty
+            return f"Invalid destination: {dest_code}"
+        if len(source_pile) == 0:
+            return "No cards to move"
 
-        # Handle waste to tableau/foundation
-        if source_pile is self.game.waste:
-            if not self.game.waste:
-                return "No card in waste pile"
-            card = self.game.waste[-1]
+        # Handle moves based on destination type
+        if dest_code.startswith('f'):
+            return self._move_to_foundation(source_pile, source_idx, dest_pile, dest_idx, source_code, dest_code)
+        elif dest_code.startswith('t'):
+            return self._move_to_tableau(source_pile, source_idx, dest_pile, dest_idx, source_code, dest_code)
+        else:
+            return f"Cannot move to {dest_code}"
 
-            # Check if card is visible (for hard mode)
-            if not card.visible:
-                return "Can't move face-down cards"
+    def _move_to_foundation(self, source_pile, source_idx, dest_pile, dest_idx, source_code, dest_code):
+        """Handle moves to foundation piles"""
+        # Can only move one card at a time to foundation
+        if not source_pile or len(source_pile) == 0:
+            return "No cards to move"
 
-            # Moving to tableau
-            if dest_pile in self.game.tableau:
-                if not dest_pile:  # Empty tableau pile - only Kings allowed
-                    if card.rank == 'K':
-                        # Record move for undo
-                        moved_card = {'rank': card.rank, 'suit': card.suit, 'visible': card.visible}
+        # Can only move the top card
+        if source_code.startswith('t'):
+            if not source_pile or len(source_pile) == 0:
+                return "No cards in tableau pile"
+            if not source_pile[-1].visible:
+                return "Cannot move a face-down card"
+            card = source_pile[-1]
+        elif source_code.startswith('w'):
+            if not source_pile or len(source_pile) == 0:
+                return "No cards in waste pile"
+            card = source_pile[-1]
+        else:
+            return "Invalid source for foundation move"
 
-                        self.game.waste.pop()
-                        dest_pile.append(card)
+        # Check if the card can be placed on the foundation
+        if not self.game.can_place_on_foundation(card, dest_pile):
+            return "Invalid move: Card cannot be placed on foundation"
 
-                        self.game.record_move('move', source_code, dest_code, [moved_card])
-                        return "Moved successfully"
-                    return "Only Kings can be placed on empty tableau piles"
-                # Non-empty tableau pile
-                if self.game.can_place_on_tableau(card, dest_pile[-1]):
-                    # Record move for undo
-                    moved_card = {'rank': card.rank, 'suit': card.suit, 'visible': card.visible}
+        # Move the card
+        card_data = {'rank': card.rank, 'suit': card.suit, 'visible': card.visible}
+        source_pile.pop()
+        dest_pile.append(card)
 
-                    self.game.waste.pop()
-                    dest_pile.append(card)
+        # Reveal the top card in tableau if needed
+        revealed_card = None
+        if source_code.startswith('t') and source_pile and not source_pile[-1].visible:
+            source_pile[-1].visible = True
+            revealed_card = {'rank': source_pile[-1].rank, 'suit': source_pile[-1].suit, 'visible': False}
 
-                    self.game.record_move('move', source_code, dest_code, [moved_card])
-                    return "Moved successfully"
-                return "Invalid move: card must be opposite color and one rank lower"
+        # Record the move
+        self.game.record_move('move', source_code, dest_code, [card_data], revealed_card)
+        return "Card moved to foundation"
 
-            # Moving to foundation
-            elif dest_pile in self.game.foundations:
-                if self.game.can_place_on_foundation(card, dest_pile):
-                    # Record move for undo
-                    moved_card = {'rank': card.rank, 'suit': card.suit, 'visible': card.visible}
+    def _move_to_tableau(self, source_pile, source_idx, dest_pile, dest_idx, source_code, dest_code):
+        """Handle moves to tableau piles"""
+        # Determine which cards to move
+        cards_to_move = []
 
-                    dest_pile.append(self.game.waste.pop())
-
-                    self.game.record_move('move', source_code, dest_code, [moved_card])
-                    return "Moved successfully"
-                if not dest_pile:
-                    return "Foundation piles must start with Ace"
-                return "Invalid foundation move: must build up by suit"
-
-        # Handle tableau to tableau/foundation movement
-        elif source_pile in self.game.tableau:
-            if not source_pile:
-                return "No cards in this tableau pile"
-
-            # Moving to foundation
-            if dest_pile in self.game.foundations:
-                # For foundation, can only move the last card in tableau pile
-                if not source_pile[-1].visible:
-                    return "Can't move face-down cards"
-
-                card = source_pile[-1]
-                if self.game.can_place_on_foundation(card, dest_pile):
-                    # Record move for undo
-                    moved_card = {'rank': card.rank, 'suit': card.suit, 'visible': card.visible}
-
-                    card_to_move = source_pile.pop()
-                    dest_pile.append(card_to_move)
-
-                    # Make the next card visible if needed
-                    revealed_card = None
-                    if source_pile and not source_pile[-1].visible:
-                        revealed_card = {'rank': source_pile[-1].rank, 'suit': source_pile[-1].suit, 'visible': False}
-                        source_pile[-1] = Card(source_pile[-1].rank, source_pile[-1].suit, True)
-
-                    self.game.record_move('move', source_code, dest_code, [moved_card], revealed_card)
-                    return "Moved successfully"
-
-                if not dest_pile:
-                    return "Foundation piles must start with Ace"
-                return "Invalid foundation move: must build up by suit"
-
-            # Find first visible card to move (for tableau to tableau)
-            first_visible_idx = None
-            for i, c in enumerate(source_pile):
-                if c.visible:
-                    first_visible_idx = i
+        if source_code.startswith('t'):
+            # Find first visible card in source pile
+            visible_index = -1
+            for i, card in enumerate(source_pile):
+                if card.visible:
+                    visible_index = i
                     break
 
-            if first_visible_idx is None:
-                return "No visible cards in this pile"
+            if visible_index == -1:
+                return "No visible cards to move"
 
-            cards_to_move = source_pile[first_visible_idx:]
-            if not cards_to_move:
-                return "No cards to move"
+            cards_to_move = source_pile[visible_index:]
 
-            # Moving to tableau
-            if dest_pile in self.game.tableau:
-                if not dest_pile:  # Empty tableau pile - only Kings allowed
-                    if cards_to_move[0].rank == 'K':
-                        # Record move for undo
-                        moved_cards = [{'rank': card.rank, 'suit': card.suit, 'visible': card.visible}
-                                       for card in cards_to_move]
-
-                        cards_moved = []
-                        for _ in range(len(cards_to_move)):
-                            card_to_move = source_pile.pop(first_visible_idx)
-                            dest_pile.append(card_to_move)
-                            cards_moved.append(card_to_move)
-
-                        # Make the next card visible if needed
-                        revealed_card = None
-                        if source_pile and not source_pile[-1].visible:
-                            revealed_card = {'rank': source_pile[-1].rank, 'suit': source_pile[-1].suit,
-                                             'visible': False}
-                            source_pile[-1] = Card(source_pile[-1].rank, source_pile[-1].suit, True)
-
-                        self.game.record_move('move', source_code, dest_code, moved_cards, revealed_card)
-                        return "Moved successfully"
-                    return "Only Kings can be placed on empty tableau piles"
-
-                # Non-empty tableau pile
-                if self.game.can_place_on_tableau(cards_to_move[0], dest_pile[-1]):
-                    # Record move for undo
-                    moved_cards = [{'rank': card.rank, 'suit': card.suit, 'visible': card.visible}
-                                   for card in cards_to_move]
-
-                    cards_moved = []
-                    for _ in range(len(cards_to_move)):
-                        card_to_move = source_pile.pop(first_visible_idx)
-                        dest_pile.append(card_to_move)
-                        cards_moved.append(card_to_move)
-
-                    # Make the next card visible if needed
-                    revealed_card = None
-                    if source_pile and not source_pile[-1].visible:
-                        revealed_card = {'rank': source_pile[-1].rank, 'suit': source_pile[-1].suit, 'visible': False}
-                        source_pile[-1] = Card(source_pile[-1].rank, source_pile[-1].suit, True)
-
-                    self.game.record_move('move', source_code, dest_code, moved_cards, revealed_card)
-                    return "Moved successfully"
-                return "Invalid move: card must be opposite color and one rank lower"
-
-        # Handle foundation to tableau movement
-        elif source_pile in self.game.foundations:
+        elif source_code.startswith('w') or source_code.startswith('f'):
+            # Can only move one card from waste or foundation
             if not source_pile:
-                return "No cards in this foundation pile"
+                return "No cards to move"
+            cards_to_move = [source_pile[-1]]
 
-            card = source_pile[-1]
-            # Moving to tableau
-            if dest_pile in self.game.tableau:
-                if not dest_pile:  # Empty tableau - only Kings allowed
-                    if card.rank == 'K':
-                        # Record move for undo
-                        moved_card = {'rank': card.rank, 'suit': card.suit, 'visible': card.visible}
+        if not cards_to_move:
+            return "No cards to move"
 
-                        dest_pile.append(source_pile.pop())
+        # Check if the move is valid
+        if not dest_pile:  # Empty tableau pile
+            if cards_to_move[0].rank != 'K':
+                return "Only Kings can be placed on empty tableau piles"
+        else:  # Non-empty tableau pile
+            if not self.game.can_place_on_tableau(cards_to_move[0], dest_pile[-1]):
+                return "Invalid move: Cards must be placed in alternating colors and descending order"
 
-                        self.game.record_move('move', source_code, dest_code, [moved_card])
-                        return "Moved successfully"
-                    return "Only Kings can be placed on empty tableau piles"
-                # Non-empty tableau pile
-                if self.game.can_place_on_tableau(card, dest_pile[-1]):
-                    # Record move for undo
-                    moved_card = {'rank': card.rank, 'suit': card.suit, 'visible': card.visible}
+        # Move the cards
+        card_data_list = [{'rank': c.rank, 'suit': c.suit, 'visible': c.visible} for c in cards_to_move]
 
-                    dest_pile.append(source_pile.pop())
+        # Remove cards from source
+        revealed_card = None
+        if source_code.startswith('t'):
+            new_len = len(source_pile) - len(cards_to_move)
+            # Check if we need to reveal a card
+            if new_len > 0 and not source_pile[new_len - 1].visible:
+                source_pile[new_len - 1].visible = True
+                revealed_card = {'rank': source_pile[new_len - 1].rank,
+                                 'suit': source_pile[new_len - 1].suit,
+                                 'visible': False}
+            source_pile[:] = source_pile[:new_len]
+        else:
+            for _ in range(len(cards_to_move)):
+                source_pile.pop()
 
-                    self.game.record_move('move', source_code, dest_code, [moved_card])
-                    return "Moved successfully"
-                return "Invalid move: card must be opposite color and one rank lower"
+        # Add cards to destination
+        for card in cards_to_move:
+            dest_pile.append(card)
 
-        return "Invalid move"
+        # Record the move
+        self.game.record_move('move', source_code, dest_code, card_data_list, revealed_card)
+        return f"{len(cards_to_move)} card(s) moved"
