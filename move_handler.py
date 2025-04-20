@@ -105,9 +105,6 @@ class MoveHandler:
 
     def _move_to_tableau(self, source_pile, source_idx, dest_pile, dest_idx, source_code, dest_code):
         """Handle moves to tableau piles"""
-        # Determine which cards to move
-        cards_to_move = []
-
         if source_code.startswith('t'):
             # Find first visible card in source pile
             visible_index = -1
@@ -119,47 +116,69 @@ class MoveHandler:
             if visible_index == -1:
                 return "No visible cards to move"
 
-            cards_to_move = source_pile[visible_index:]
+            # Try moving subsets of cards, starting from all visible cards
+            # and progressively reducing to just one card if needed
+            cards_range = range(visible_index, len(source_pile))
+            for start_idx in cards_range:
+                cards_to_move = source_pile[start_idx:]
+
+                # Check if this subset of cards can be placed
+                if not dest_pile:  # Empty tableau pile
+                    if cards_to_move[0].rank != 'K':
+                        continue  # Try a smaller subset
+                else:  # Non-empty tableau pile
+                    if not self.game.can_place_on_tableau(cards_to_move[0], dest_pile[-1]):
+                        continue  # Try a smaller subset
+
+                # Found a valid subset to move
+                card_data_list = [{'rank': c.rank, 'suit': c.suit, 'visible': c.visible} for c in cards_to_move]
+
+                # Remove cards from source
+                revealed_card = None
+                new_len = start_idx
+                if new_len > 0 and not source_pile[new_len - 1].visible:
+                    source_pile[new_len - 1].visible = True
+                    revealed_card = {'rank': source_pile[new_len - 1].rank,
+                                     'suit': source_pile[new_len - 1].suit,
+                                     'visible': False}
+                source_pile[:] = source_pile[:new_len]
+
+                # Add cards to destination
+                for card in cards_to_move:
+                    dest_pile.append(card)
+
+                # Record the move
+                self.game.record_move('move', source_code, dest_code, card_data_list, revealed_card)
+                return f"{len(cards_to_move)} card(s) moved"
+
+            return "Cannot move any cards to that destination"
 
         elif source_code.startswith('w') or source_code.startswith('f'):
-            # Can only move one card from waste or foundation
+            # Handle waste or foundation moves (same as before)
             if not source_pile:
                 return "No cards to move"
             cards_to_move = [source_pile[-1]]
 
-        if not cards_to_move:
-            return "No cards to move"
+            # Check if the move is valid
+            if not dest_pile:  # Empty tableau pile
+                if cards_to_move[0].rank != 'K':
+                    return "Only Kings can be placed on empty tableau piles"
+            else:  # Non-empty tableau pile
+                if not self.game.can_place_on_tableau(cards_to_move[0], dest_pile[-1]):
+                    return "Invalid move: Cards must be placed in alternating colors and descending order"
 
-        # Check if the move is valid
-        if not dest_pile:  # Empty tableau pile
-            if cards_to_move[0].rank != 'K':
-                return "Only Kings can be placed on empty tableau piles"
-        else:  # Non-empty tableau pile
-            if not self.game.can_place_on_tableau(cards_to_move[0], dest_pile[-1]):
-                return "Invalid move: Cards must be placed in alternating colors and descending order"
+            # Move the cards
+            card_data_list = [{'rank': c.rank, 'suit': c.suit, 'visible': c.visible} for c in cards_to_move]
 
-        # Move the cards
-        card_data_list = [{'rank': c.rank, 'suit': c.suit, 'visible': c.visible} for c in cards_to_move]
+            # Remove cards from source
+            source_pile.pop()
 
-        # Remove cards from source
-        revealed_card = None
-        if source_code.startswith('t'):
-            new_len = len(source_pile) - len(cards_to_move)
-            # Check if we need to reveal a card
-            if new_len > 0 and not source_pile[new_len - 1].visible:
-                source_pile[new_len - 1].visible = True
-                revealed_card = {'rank': source_pile[new_len - 1].rank,
-                                 'suit': source_pile[new_len - 1].suit,
-                                 'visible': False}
-            source_pile[:] = source_pile[:new_len]
-        else:
-            for _ in range(len(cards_to_move)):
-                source_pile.pop()
+            # Add cards to destination
+            for card in cards_to_move:
+                dest_pile.append(card)
 
-        # Add cards to destination
-        for card in cards_to_move:
-            dest_pile.append(card)
+            # Record the move
+            self.game.record_move('move', source_code, dest_code, card_data_list, None)
+            return f"{len(cards_to_move)} card(s) moved"
 
-        # Record the move
-        self.game.record_move('move', source_code, dest_code, card_data_list, revealed_card)
-        return f"{len(cards_to_move)} card(s) moved"
+        return "No cards to move"
