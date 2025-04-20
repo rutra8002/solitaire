@@ -53,7 +53,7 @@ class GameDisplay:
             card = self.game.waste[-1]
             if card.visible:
                 suit_color = "red" if card.suit in ["♥", "♦"] else "white"
-                waste_display = f"[{card.rank}{Text(card.suit, style=suit_color)}]"
+                waste_display = f"[{suit_color}][{card.rank}{card.suit}][/{suit_color}]"
             else:
                 waste_display = "[XX]"
 
@@ -63,7 +63,7 @@ class GameDisplay:
             if pile:
                 card = pile[-1]
                 suit_color = "red" if card.suit in ["♥", "♦"] else "white"
-                foundations_display += f"[{card.rank}{Text(card.suit, style=suit_color)}] "
+                foundations_display += f"[{suit_color}][{card.rank}{card.suit}][/{suit_color}] "
             else:
                 foundations_display += f"[F{i + 1}] "
 
@@ -87,7 +87,7 @@ class GameDisplay:
                     card = self.game.tableau[j][i]
                     if card.visible:
                         suit_color = "red" if card.suit in ["♥", "♦"] else "white"
-                        row.append(f"[{card.rank}{Text(card.suit, style=suit_color)}]")
+                        row.append(f"[{suit_color}][{card.rank}{card.suit}][/{suit_color}]")
                     else:
                         row.append("[XX]")
                 else:
