@@ -44,28 +44,31 @@ class GameDisplay:
         top_table.add_column("Waste")
         top_table.add_column("Foundations")
 
-        # Stock display
-        stock_display = "[XX]" if self.game.stock else "[ ]"
+        # Stock display with count
+        stock_count = len(self.game.stock)
+        stock_display = f"[XX] ({stock_count})" if self.game.stock else "[ ] (0)"
 
-        # Waste display with colored suits
-        waste_display = "[ ]"
+        # Waste display with count and colored suits
+        waste_count = len(self.game.waste)
+        waste_display = "[ ] (0)"
         if self.game.waste:
             card = self.game.waste[-1]
             if card.visible:
                 suit_color = "red" if card.suit in ["♥", "♦"] else "white"
-                waste_display = f"[{suit_color}][{card.rank}{card.suit}][/{suit_color}]"
+                waste_display = f"[{suit_color}][{card.rank}{card.suit}][/{suit_color}] ({waste_count})"
             else:
-                waste_display = "[XX]"
+                waste_display = f"[XX] ({waste_count})"
 
-        # Foundations display with colored suits
+        # Foundations display with count and colored suits
         foundations_display = ""
         for i, pile in enumerate(self.game.foundations):
+            pile_count = len(pile)
             if pile:
                 card = pile[-1]
                 suit_color = "red" if card.suit in ["♥", "♦"] else "white"
-                foundations_display += f"[{suit_color}][{card.rank}{card.suit}][/{suit_color}] "
+                foundations_display += f"[{suit_color}][{card.rank}{card.suit}][/{suit_color}] ({pile_count}) "
             else:
-                foundations_display += f"[F{i + 1}] "
+                foundations_display += f"[F{i + 1}] (0) "
 
         top_table.add_row(
             f"Stock: {stock_display}",
@@ -74,10 +77,11 @@ class GameDisplay:
         )
         game_layout["top_row"].update(top_table)
 
-        # Tableau display
-        tableau_table = Table(show_header=False, box=None)
+        # Tableau display with card counts in headers
+        tableau_table = Table(show_header=True, box=None)
         for i in range(7):
-            tableau_table.add_column(f"T{i + 1}")
+            pile_count = len(self.game.tableau[i])
+            tableau_table.add_column(f"T{i + 1} ({pile_count})")
 
         max_height = max(len(pile) for pile in self.game.tableau)
         for i in range(max_height):
