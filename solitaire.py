@@ -41,16 +41,8 @@ class Solitaire:
             json.dump(self.leaderboard, f)
 
     def select_difficulty(self):
-        while True:
-            choice = input("Select difficulty (1-Easy, 2-Hard): ")
-            if choice == '1':
-                self.difficulty = 'easy'
-                break
-            elif choice == '2':
-                self.difficulty = 'hard'
-                break
-            else:
-                print("Invalid choice, please enter 1 or 2.")
+        self.difficulty = self.display.get_difficulty()
+
 
     def init_game(self):
         # Create and shuffle deck

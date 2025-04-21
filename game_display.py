@@ -143,3 +143,16 @@ class GameDisplay:
                 self.console.print(f"{i}. {s} moves")
 
         input("Press Enter to exit...")
+
+    def get_difficulty(self):
+        os.system('cls' if os.name == 'nt' else 'clear')
+        self.console.print(Panel("=== CONSOLE SOLITAIRE ===", style="bold white on blue"))
+        self.console.print(Panel("Select difficulty:", style="bold"))
+        self.console.print("1. Easy - Draw one card at a time")
+        self.console.print("2. Hard - Draw three cards at a time")
+
+        while True:
+            choice = input("\nSelect difficulty (1-Easy, 2-Hard): ")
+            if choice in ['1', '2']:
+                return 'easy' if choice == '1' else 'hard'
+            self.console.print("[red]Invalid choice, please enter 1 or 2.[/red]")
