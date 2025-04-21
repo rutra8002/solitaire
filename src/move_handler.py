@@ -1,6 +1,3 @@
-from card import Card
-
-
 class MoveHandler:
     def __init__(self, game):
         self.game = game

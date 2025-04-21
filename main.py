@@ -1,4 +1,4 @@
-from solitaire import Solitaire
+from src.solitaire import Solitaire
 
 if __name__ == "__main__":
     game = Solitaire()

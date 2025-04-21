@@ -1,7 +1,7 @@
-from card import Card
-from deck import Deck
-from game_display import GameDisplay
-from move_handler import MoveHandler
+from src.card import Card
+from src.deck import Deck
+from src.game_display import GameDisplay
+from src.move_handler import MoveHandler
 import os
 import json
 
@@ -28,16 +28,16 @@ class Solitaire:
         self.move_handler = MoveHandler(self)
 
     def load_leaderboard(self):
-        if os.path.exists('leaderboard.json'):
+        if os.path.exists('../leaderboard.json'):
             try:
-                with open('leaderboard.json', 'r') as f:
+                with open('../leaderboard.json', 'r') as f:
                     return json.load(f)
             except:
                 return {'easy': [], 'hard': []}
         return {'easy': [], 'hard': []}
 
     def save_leaderboard(self):
-        with open('leaderboard.json', 'w') as f:
+        with open('../leaderboard.json', 'w') as f:
             json.dump(self.leaderboard, f)
 
     def select_difficulty(self):
