@@ -1,6 +1,6 @@
 # Console Solitaire
 
-A text-based implementation of the classic Solitaire card game, built with Python and the Textual library.
+A text-based implementation of the classic Solitaire card game, built with Python and the Rich library.
 
 ## How to Run the Project
 
