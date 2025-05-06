@@ -26,7 +26,8 @@ class GameDisplay:
         # Header with difficulty
         difficulty_text = "EASY MODE" if self.game.difficulty == 'easy' else "HARD MODE"
         layout["header"].update(
-            Panel(f"=== CONSOLE SOLITAIRE - {difficulty_text} ===", style="bold white on blue")
+            Panel(f"=== CONSOLE SOLITAIRE - {difficulty_text} ===",
+                  style="bold white on green" if self.game.difficulty == 'easy' else "bold white on red")
         )
 
         # Game area with stock, waste, foundations and tableau
