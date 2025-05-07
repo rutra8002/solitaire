@@ -83,7 +83,22 @@ class GameDisplay:
 
         # Waste display
         waste_count = len(self.game.waste)
-        waste_display = self._format_card(None, "W") if waste_count == 0 else self._format_card(self.game.waste[-1])
+
+        # Show up to 3 top cards in the waste pile
+        if waste_count > 0:
+            # Get up to the 3 most recent cards from waste
+            visible_waste = self.game.waste[-min(3, waste_count):]
+
+            # Format each card with proper spacing
+            waste_display = ""
+            for card in visible_waste:
+                waste_display += f"{self._format_card(card)} "
+
+            # Remove trailing space
+            waste_display = waste_display.strip()
+        else:
+            waste_display = self._format_card(None, "W")
+
         waste_label = f"({waste_count})"
 
         stock_waste_table.add_row(f"{stock_display}\n{stock_label}", f"{waste_display}\n{waste_label}")
