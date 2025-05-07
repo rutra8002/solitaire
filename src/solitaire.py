@@ -143,15 +143,13 @@ class Solitaire:
             return
 
         # Draw cards based on difficulty
-        if self.difficulty == 'easy':
+        cards_to_draw = 1 if self.difficulty == 'easy' else min(3, len(self.stock))
+
+        for i in range(cards_to_draw):
             if self.stock:
                 card = self.stock.pop()
-                self.waste.append(Card(card.rank, card.suit, True))
-                drawn_cards.append({'rank': card.rank, 'suit': card.suit, 'visible': True})
-        else:  # Hard mode
-            for _ in range(min(3, len(self.stock))):
-                card = self.stock.pop()
-                visible = (_ == min(3, len(self.stock)) - 1)  # Only the top card is visible
+                # In easy mode or if it's the top card in hard mode, make it visible
+                visible = self.difficulty == 'easy' or i == cards_to_draw - 1
                 self.waste.append(Card(card.rank, card.suit, visible))
                 drawn_cards.append({'rank': card.rank, 'suit': card.suit, 'visible': visible})
 
