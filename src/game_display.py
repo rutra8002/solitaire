@@ -107,7 +107,7 @@ class GameDisplay:
         # Foundations display
         foundations_table = Table(box=SIMPLE, show_header=True, header_style="bold cyan")
         for i in range(4):
-            foundations_table.add_column(f"{i + 1}", justify="center")
+            foundations_table.add_column(f"F{i + 1}", justify="center")
 
         foundation_displays = []
         for i, pile in enumerate(self.game.foundations):
