@@ -125,7 +125,6 @@ class GameDisplay:
         # Tableau display
         tableau_table = Table(box=SIMPLE, show_header=True, header_style="bold cyan")
         for i in range(7):
-            pile_count = len(self.game.tableau[i])
             tableau_table.add_column(f"T{i + 1}", justify="center", style="white")
 
         # Calculate visible rows needed
@@ -232,7 +231,7 @@ class GameDisplay:
         os.system('cls' if os.name == 'nt' else 'clear')
 
         # Create title
-        title = Text("♣ ♦ CONSOLE SOLITAIRE ♠ ♥", justify="center")
+        title = Text("♣ ♦ ♠ ♥  CONSOLE SOLITAIRE  ♥ ♠ ♦ ♣", justify="center")
         title.stylize("bold white")
 
         self.console.print(Panel(title, box=DOUBLE))
