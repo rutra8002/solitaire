@@ -4,15 +4,24 @@ A text-based implementation of the classic Solitaire card game, built with Pytho
 
 ## How to Run the Project
 
+### Option 1: Run with Python
+
 1. Make sure you have Python 3.6+ installed
-2. Install dependencies:
+2. Download the 16-18_python_Artur_Kummer.zip file from the releases section
+3. Install dependencies:
    ```bash
    pip install -r requirements.txt
    ```
-3. Run the game:
+4. Run the game:
    ```bash
    python main.py
    ```
+   
+### Option 2: Run the Executable (Windows)
+1. Download the 16-18_exe_Artur_Kummer.zip file from the releases section
+2. Extract the ZIP file to a location of your choice
+3. Double-click the main.exe file to start the game
+
 
 ## Gameplay Instructions
 
